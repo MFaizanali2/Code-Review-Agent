@@ -1,0 +1,28 @@
+# Core dependencies
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.5.0
+python-dotenv>=1.0.0
+
+# LLM providers (Person 3 install karega)
+google-genai>=1.0.0
+openai>=1.12.0
+anthropic>=0.18.0
+
+# Frontend
+streamlit>=1.30.0
+requests>=2.31.0
+
+# Tools (Person 2 install karega)
+# bandit>=1.7.0          # Security scanner
+# pylint>=3.0.0         # Linter
+# black>=24.0.0         # Formatter check
+
+# Testing
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+pytest-cov>=4.1.0
+
+# Code quality
+ruff>=0.3.0
+mypy>=1.8.0
