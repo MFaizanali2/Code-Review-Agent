@@ -2,7 +2,9 @@
 fastapi>=0.110.0
 uvicorn[standard]>=0.27.0
 pydantic>=2.5.0
+pydantic-settings>=2.1.0
 python-dotenv>=1.0.0
+sqlalchemy>=2.0.25
 
 # LLM providers (Person 3 install karega)
 google-genai>=1.0.0
