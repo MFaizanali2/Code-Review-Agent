@@ -32,11 +32,11 @@ AGENT_STATES: dict[str, str] = {
 # Person 2 apne tools in identifiers ke against register karega.
 # Key = constant name (uppercase), Value = actual tool identifier (snake_case)
 TOOLS: dict[str, str] = {
-    "FETCH_REPO":        "fetch_repository",         # GitHub se code fetch karta hai
-    "ANALYZE_CODE":      "analyze_code",             # General code analysis
-    "SECURITY_AUDIT":    "security_audit",           # Security vulnerabilities check
-    "PERFORMANCE_CHECK": "performance_check",        # Performance bottlenecks dhundna
-    "GENERATE_REPORT":   "generate_report",          # Final markdown report banana
+    "FETCH_REPO":        "fetch_repository",            # GitHub se code fetch karta hai
+    "ANALYZE_CODE":      "analyze_code_structure",      # Code structure analyze karta hai
+    "SECURITY_AUDIT":    "security_audit",              # Security vulnerabilities check
+    "PERFORMANCE_CHECK": "performance_analysis",        # Performance bottlenecks dhundna
+    "GENERATE_REPORT":   "generate_report",             # Final markdown report banana
 }
 
 

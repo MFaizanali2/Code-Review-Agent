@@ -321,6 +321,31 @@ class AgentMemory:
             logger.exception("Failed to get all results for %s: %s", tool_name, exc)
             return []
 
+    def get_recent_steps(self, n: int) -> List[AgentStep]:
+        """
+        Last N steps return karo (chronological order, oldest first).
+        Utility function ke liye helpful - format_memory_for_llm etc.
+
+        Args:
+            n: Number of recent steps to retrieve. If n >= total, returns all.
+
+        Returns:
+            List of recent AgentSteps. Empty list if memory is empty.
+
+        Example:
+            >>> recent = memory.get_recent_steps(5)
+            >>> for step in recent:
+            ...     print(step.step_number, step.step_type)
+        """
+        try:
+            with self._lock:
+                if n <= 0:
+                    return []
+                return list(self._steps[-n:])
+        except Exception as exc:
+            logger.exception("Failed to get recent steps: %s", exc)
+            return []
+
     def get_steps_by_type(self, step_type: StepType) -> List[AgentStep]:
         """
         Specific type ke saare steps return karo (THINK, ACT, OBSERVE, REFLECT).

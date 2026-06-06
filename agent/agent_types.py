@@ -61,6 +61,33 @@ class StepType(str, Enum):
     REFLECT = "reflect"  # LLM evaluate kar raha hai kya kaam ho gaya
 
 
+class AgentStatus(str, Enum):
+    """
+    Agent ka high-level lifecycle status.
+    UI dashboards aur monitoring ke liye use hota hai.
+
+    ReACT loop ke dauran status transitions:
+        IDLE -> THINKING -> ACTING -> OBSERVING -> REFLECTING
+              -> THINKING (next iteration) -> ... -> COMPLETED/FAILED
+
+    Inherits from str for JSON serialization.
+
+    Example:
+        >>> status = AgentStatus.IDLE
+        >>> status.value
+        'idle'
+        >>> status == AgentStatus.THINKING
+        False
+    """
+    IDLE = "idle"              # Koi request nahi, input ka intezaar
+    THINKING = "thinking"      # LLM se reasoning le raha hai
+    ACTING = "acting"          # Tool call create/execute kar raha hai
+    OBSERVING = "observing"    # Tool ka result analyze kar raha hai
+    REFLECTING = "reflecting"  # Result pe self-evaluate kar raha hai
+    COMPLETED = "completed"    # Task successfully complete
+    FAILED = "failed"          # Error ya unrecoverable failure
+
+
 # =============================================================================
 # DATACLASSES - Tool execution
 # =============================================================================
