@@ -53,7 +53,7 @@ class Settings:
     max_context_tokens: int = field(default_factory=lambda: _get_int("MAX_CONTEXT_TOKENS", 32000))
 
     # API settings
-    api_host: str = field(default_factory=lambda: _get_env("API_HOST", "0.0.0.0"))
+    api_host: str = field(default_factory=lambda: _get_env("API_HOST", "127.0.0.1"))
     api_port: int = field(default_factory=lambda: _get_int("API_PORT", 8000))
     api_debug: bool = field(default_factory=lambda: _get_bool("API_DEBUG", False))
 
