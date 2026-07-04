@@ -11,7 +11,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from agent.tools.base import BaseTool, ToolResult
+from agent.tools.base import ToolResult
 from agent.tools.registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
@@ -92,7 +92,9 @@ class ToolOrchestrator:
 
         semaphore = asyncio.Semaphore(self.max_parallel)
 
-        async def _run_one(tool_name: str, tool_input: dict[str, Any]) -> tuple[str, ToolResult | None, str | None]:
+        async def _run_one(
+            tool_name: str, tool_input: dict[str, Any]
+        ) -> tuple[str, ToolResult | None, str | None]:
             async with semaphore:
                 res = await self.call_single(tool_name, tool_input)
                 if res.success:

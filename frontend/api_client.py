@@ -6,6 +6,7 @@ Falls back to mock data if backend is offline (Demo Mode).
 
 import requests
 import logging
+from datetime import datetime
 from typing import Optional
 import random
 
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class APIClient:
-    def __init__(self, endpoint: str):
+    def __init__(self, endpoint: str) -> None:
         self.endpoint = endpoint.rstrip("/")
         self.timeout = 120
 
@@ -184,7 +185,6 @@ class APIClient:
 
     def _generate_full_report(self, score: int, source: str) -> str:
         """Generate a formatted markdown report."""
-        from datetime import datetime
         grade = "A" if score >= 90 else "B" if score >= 75 else "C" if score >= 60 else "D"
 
         return f"""## 🧠 CodeSense AI — Automated Code Review Report

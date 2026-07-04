@@ -23,6 +23,7 @@ from agent.llm.client import LLMClient
 from agent.memory.conversation import ConversationMemory, MessageRole
 from agent.memory.context import ContextWindow, TokenBudget
 from agent.prompts.system import SYSTEM_PROMPT
+from agent.tools.base import BaseTool
 from agent.tools.registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
@@ -49,6 +50,8 @@ class CodeReviewAgent:
         llm: LLMClient,
         config: ReACTConfig | None = None,
         token_budget: TokenBudget | None = None,
+        auto_load_tools: bool = True,
+        skip_team_project: bool = False,
     ) -> None:
         # LLM client - Person 3 provide karega
         self.llm = llm
@@ -62,6 +65,18 @@ class CodeReviewAgent:
 
         # Tool system - Person 2 tools register karega
         self.tool_registry = ToolRegistry()
+
+        # Auto-load built-in tools unless disabled
+        if auto_load_tools:
+            from agent.tools.loader import load_builtin_tools
+
+            load_builtin_tools(
+                self.tool_registry, skip_team_project=skip_team_project
+            )
+            loaded = len(self.tool_registry)
+            if loaded:
+                logger.info("Auto-loaded %d built-in tools", loaded)
+
         self.orchestrator = ToolOrchestrator(self.tool_registry, max_parallel=3)
 
         # ReACT engine - core reasoning
@@ -77,14 +92,11 @@ class CodeReviewAgent:
         self.memory.set_system_prompt(SYSTEM_PROMPT, session_id="default")
         logger.info("CodeReviewAgent initialized")
 
-    def register_tool(self, tool: Any) -> None:
-        """
-        Tool register karo - Person 2 ke tools is method se add honge.
-        Convenience wrapper around tool_registry.register.
-        """
+    def register_tool(self, tool: BaseTool) -> None:
+        """Register a single tool with the tool registry."""
         self.tool_registry.register(tool)
 
-    def register_tools(self, tools: list[Any]) -> None:
+    def register_tools(self, tools: list[BaseTool]) -> None:
         """Bulk tool registration."""
         self.tool_registry.register_many(tools)
 

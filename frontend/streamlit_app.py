@@ -4,13 +4,63 @@ Person 5: Frontend + DevOps
 """
 
 import streamlit as st
-import requests
 import json
 import pandas as pd
 from datetime import datetime
 import time
 from api_client import APIClient
 
+
+# ─── UI Helper Functions ──────────────────────────────────────────────────────
+
+def _section_header(icon: str, title: str, extra_style: str = "") -> None:
+    """Render a consistent section header."""
+    st.markdown(f"""
+    <div class="section-header"{extra_style}>
+        <div class="section-icon">{icon}</div>
+        <div class="section-title">{title}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def _render_issue_card(issue: dict, sev_map: dict) -> None:
+    """Render a single issue card."""
+    sev = issue.get("severity", "info")
+    pill_class, icon = sev_map.get(sev, ("pill-info", "🔵"))
+    st.markdown(f"""
+    <div class="issue-card {'danger' if sev=='critical' else sev}">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start">
+            <div class="issue-title">{icon} {issue['title']}</div>
+            <span class="status-pill {pill_class}">{sev}</span>
+        </div>
+        <div class="issue-desc">{issue['desc']}</div>
+        <div class="issue-line">📍 {issue.get('line','—')}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def _render_quality_metric(name: str, val: int) -> None:
+    """Render a single quality metric with colored progress bar."""
+    color = "#00E676" if val >= 80 else "#FFD600" if val >= 60 else "#FF4C4C"
+    st.markdown(f"**{name.replace('_',' ').title()}**")
+    st.progress(val / 100)
+    st.markdown(
+        f"<div style='color:{color}; font-family: Space Mono; "
+        f"font-size:0.8rem; margin-top:-12px; margin-bottom:12px'>{val}/100</div>",
+        unsafe_allow_html=True,
+    )
+
+
+def _build_history_entry(h: dict) -> dict:
+    """Build a history table row from a result dict."""
+    return {
+        "Timestamp": h.get("timestamp", "—"),
+        "Source": h.get("source", "—")[:50],
+        "Score": f"{h.get('overall_score', '—')}/100",
+        "Critical": h.get("critical_issues", 0),
+        "Warnings": h.get("warnings", 0),
+        "Files": h.get("files_analyzed", 0),
+    }
 
 
 # ─── Page Configuration ──────────────────────────────────────────────────────
@@ -474,12 +524,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ─── Input Section ────────────────────────────────────────────────────────────
-st.markdown("""
-<div class="section-header">
-    <div class="section-icon">📥</div>
-    <div class="section-title">Submit Code for Review</div>
-</div>
-""", unsafe_allow_html=True)
+_section_header("📥", "Submit Code for Review")
 
 input_tab1, input_tab2 = st.tabs(["🔗  GitHub Repository", "📋  Paste Code"])
 
@@ -593,12 +638,7 @@ if trigger_analysis:
 if st.session_state.review_result:
     result = st.session_state.review_result
 
-    st.markdown("""
-    <div class="section-header">
-        <div class="section-icon">📊</div>
-        <div class="section-title">Review Results</div>
-    </div>
-    """, unsafe_allow_html=True)
+    _section_header("📊", "Review Results")
 
     # Score Overview
     score = result.get("overall_score", 72)
@@ -641,19 +681,7 @@ if st.session_state.review_result:
         sev_map = {"critical": ("pill-critical", "🔴"), "warning": ("pill-warning", "🟡"), "good": ("pill-good", "🟢"), "info": ("pill-info", "🔵")}
 
         for issue in security_issues:
-            sev = issue.get("severity", "info")
-            pill_class, icon = sev_map.get(sev, ("pill-info", "🔵"))
-            card_class = "danger" if sev == "critical" else sev
-            st.markdown(f"""
-            <div class="issue-card {'danger' if sev=='critical' else sev}">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start">
-                    <div class="issue-title">{icon} {issue['title']}</div>
-                    <span class="status-pill {pill_class}">{sev}</span>
-                </div>
-                <div class="issue-desc">{issue['desc']}</div>
-                <div class="issue-line">📍 {issue.get('line','—')}</div>
-            </div>
-            """, unsafe_allow_html=True)
+            _render_issue_card(issue, sev_map)
 
     with r_tab2:
         perf_issues = result.get("performance_issues", [
@@ -664,18 +692,7 @@ if st.session_state.review_result:
         ])
 
         for issue in perf_issues:
-            sev = issue.get("severity", "info")
-            pill_class, icon = sev_map.get(sev, ("pill-info", "🔵"))
-            st.markdown(f"""
-            <div class="issue-card {'danger' if sev=='critical' else sev}">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start">
-                    <div class="issue-title">{icon} {issue['title']}</div>
-                    <span class="status-pill {pill_class}">{sev}</span>
-                </div>
-                <div class="issue-desc">{issue['desc']}</div>
-                <div class="issue-line">📍 {issue.get('line','—')}</div>
-            </div>
-            """, unsafe_allow_html=True)
+            _render_issue_card(issue, sev_map)
 
     with r_tab3:
         col_q1, col_q2 = st.columns(2)
@@ -686,17 +703,11 @@ if st.session_state.review_result:
 
         with col_q1:
             for metric, val in list(quality.items())[:3]:
-                color = "#00E676" if val >= 80 else "#FFD600" if val >= 60 else "#FF4C4C"
-                st.markdown(f"**{metric.replace('_',' ').title()}**")
-                st.progress(val / 100)
-                st.markdown(f"<div style='color:{color}; font-family: Space Mono; font-size:0.8rem; margin-top:-12px; margin-bottom:12px'>{val}/100</div>", unsafe_allow_html=True)
+                _render_quality_metric(metric, val)
 
         with col_q2:
             for metric, val in list(quality.items())[3:]:
-                color = "#00E676" if val >= 80 else "#FFD600" if val >= 60 else "#FF4C4C"
-                st.markdown(f"**{metric.replace('_',' ').title()}**")
-                st.progress(val / 100)
-                st.markdown(f"<div style='color:{color}; font-family: Space Mono; font-size:0.8rem; margin-top:-12px; margin-bottom:12px'>{val}/100</div>", unsafe_allow_html=True)
+                _render_quality_metric(metric, val)
 
         # Suggestions
         st.markdown("#### 💡 AI Suggestions")
@@ -750,12 +761,13 @@ Your codebase shows **moderate quality** with some critical security issues that
         # Download buttons
         st.markdown("<br>", unsafe_allow_html=True)
         dl_col1, dl_col2, dl_col3 = st.columns(3)
+        ts = datetime.now().strftime("%Y%m%d_%H%M")
 
         with dl_col1:
             st.download_button(
                 "⬇️ Download Report (MD)",
                 data=report_md,
-                file_name=f"codesense_report_{datetime.now().strftime('%Y%m%d_%H%M')}.md",
+                file_name=f"codesense_report_{ts}.md",
                 mime="text/markdown",
                 use_container_width=True
             )
@@ -764,7 +776,7 @@ Your codebase shows **moderate quality** with some critical security issues that
             st.download_button(
                 "⬇️ Download JSON",
                 data=json_data,
-                file_name=f"codesense_report_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
+                file_name=f"codesense_report_{ts}.json",
                 mime="application/json",
                 use_container_width=True
             )
@@ -775,23 +787,9 @@ Your codebase shows **moderate quality** with some critical security issues that
 
 # ─── History Section ──────────────────────────────────────────────────────────
 if st.session_state.history:
-    st.markdown("""
-    <div class="section-header" style="margin-top: 3rem">
-        <div class="section-icon">📜</div>
-        <div class="section-title">Review History</div>
-    </div>
-    """, unsafe_allow_html=True)
+    _section_header("📜", "Review History", extra_style=' style="margin-top: 3rem"')
 
-    history_data = []
-    for h in reversed(st.session_state.history):
-        history_data.append({
-            "Timestamp": h.get("timestamp", "—"),
-            "Source": h.get("source", "—")[:50],
-            "Score": f"{h.get('overall_score', '—')}/100",
-            "Critical": h.get("critical_issues", 0),
-            "Warnings": h.get("warnings", 0),
-            "Files": h.get("files_analyzed", 0),
-        })
+    history_data = [_build_history_entry(h) for h in reversed(st.session_state.history)]
 
     df = pd.DataFrame(history_data)
     st.dataframe(df, use_container_width=True, hide_index=True)

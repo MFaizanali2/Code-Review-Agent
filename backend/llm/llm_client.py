@@ -215,6 +215,55 @@ class LLMClient:
         output_cost = (usage_obj.completion_tokens / 1000) * model_cost["output"]
         return round(input_cost + output_cost, 6)
 
+    # ---- Agent Interface (generate/chat/generate_with_tools) ----
+
+    async def generate(
+        self,
+        prompt: str,
+        system: str | None = None,
+        temperature: float = 0.7,
+        max_tokens: int = 2048,
+        **kwargs,
+    ) -> LLMResponse:
+        """Agent interface — single-turn generation."""
+        messages = []
+        if system:
+            messages.append(Message(role=Role.SYSTEM, content=system))
+        messages.append(Message(role=Role.USER, content=prompt))
+        return await self.call_with_tools(messages, tools=None)
+
+    async def chat(
+        self,
+        messages: list[dict[str, str]],
+        temperature: float = 0.7,
+        max_tokens: int = 2048,
+        **kwargs,
+    ) -> LLMResponse:
+        """Agent interface — multi-turn chat."""
+        converted: list[Message] = []
+        for msg in messages:
+            role_map = {"user": Role.USER, "assistant": Role.ASSISTANT, "system": Role.SYSTEM}
+            converted.append(Message(
+                role=role_map.get(msg.get("role", "user"), Role.USER),
+                content=msg.get("content", ""),
+            ))
+        return await self.call_with_tools(converted, tools=None)
+
+    async def generate_with_tools(
+        self,
+        prompt: str,
+        tools: list[dict],
+        system: str | None = None,
+        temperature: float = 0.3,
+        **kwargs,
+    ) -> LLMResponse:
+        """Agent interface — generation with tool definitions."""
+        messages = []
+        if system:
+            messages.append(Message(role=Role.SYSTEM, content=system))
+        messages.append(Message(role=Role.USER, content=prompt))
+        return await self.call_with_tools(messages, tools=tools)
+
     # ---- Message Conversion ----
 
     def _convert_messages_for_gemini(self, messages: list[Message]) -> list[dict]:
@@ -738,3 +787,35 @@ def create_custom_client(
         api_key=api_key, provider="custom", model=model,
         base_url=base_url, extra_headers=extra_headers,
     )
+
+
+class MockLLMClient:
+    """Testing ke liye mock — uses no real API keys.
+    
+    Implements the same interface as LLMClient but purely in-memory.
+    """
+
+    provider: str = "mock"
+
+    def __init__(self, default_response: str = "Mock response"):
+        self.default_response = default_response
+        self.call_count = 0
+
+    async def generate(self, prompt: str, **kwargs) -> LLMResponse:
+        self.call_count += 1
+        return LLMResponse(success=True, text=self.default_response)
+
+    async def chat(self, messages: list[dict], **kwargs) -> LLMResponse:
+        return await self.generate("")
+
+    async def generate_with_tools(self, prompt: str, tools: list[dict], **kwargs) -> LLMResponse:
+        return await self.generate(prompt)
+
+    async def call_with_tools(self, messages=None, tools=None, use_cache=False) -> LLMResponse:
+        return await self.generate("")
+
+    async def call_without_tools(self, prompt: str = "", system_prompt: str = None) -> LLMResponse:
+        return await self.generate(prompt or self.default_response)
+
+    def estimate_cost(self, response: LLMResponse) -> float:
+        return 0.0

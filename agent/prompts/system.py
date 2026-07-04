@@ -5,6 +5,8 @@ Centralized prompts - easy to update aur version control.
 
 from __future__ import annotations
 
+from typing import Any
+
 
 SYSTEM_PROMPT = """You are CodeReviewAgent, an expert AI code reviewer.
 
@@ -26,8 +28,8 @@ Rules:
 
 def build_react_prompt(
     user_input: str,
-    history: list,
-    available_tools: list[dict],
+    history: list[dict],
+    available_tools: list[dict[str, Any]],
     observations: str,
     iteration: int,
 ) -> str:
@@ -98,7 +100,7 @@ Your reflection:"""
 def build_tool_selection_prompt(
     user_input: str,
     observations: str,
-    history: list,
+    history: list[dict],
 ) -> str:
     """
     Jab max iterations hit ho jaye ya timeout ho jaye, final answer banane ka prompt.

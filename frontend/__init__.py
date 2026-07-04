@@ -1,1 +1,1 @@
-🧠 CodeSense AI — Frontend & DevOps
+"""Frontend package - Streamlit UI for Code Review Agent."""

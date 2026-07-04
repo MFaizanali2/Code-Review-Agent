@@ -9,7 +9,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
-from agent.memory.conversation import ConversationMemory, Message, MessageRole
+from agent.memory.conversation import Message, MessageRole
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,12 @@ class TokenBudget:
     @property
     def available(self) -> int:
         """Available tokens for conversation history."""
-        return self.total - self.reserved_for_system - self.reserved_for_response - self.safety_margin
+        return (
+            self.total
+            - self.reserved_for_system
+            - self.reserved_for_response
+            - self.safety_margin
+        )
 
 
 class ContextWindow:

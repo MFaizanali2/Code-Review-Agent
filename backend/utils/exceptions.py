@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
@@ -51,11 +51,7 @@ async def generic_error_handler(request: Request, exc: Exception) -> JSONRespons
     )
 
 
-def register_error_handlers(app):
+def register_error_handlers(app: FastAPI) -> None:
     """Register custom error handlers on the FastAPI app."""
-    from fastapi.exception_handlers import (  # noqa: F811
-        http_exception_handler,
-    )
-
     app.add_exception_handler(ReviewError, review_error_handler)
     app.add_exception_handler(Exception, generic_error_handler)

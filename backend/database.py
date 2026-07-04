@@ -37,12 +37,3 @@ class ReviewRecord(Base):
 def init_db() -> None:
     """Create all tables."""
     Base.metadata.create_all(bind=engine)
-
-
-def get_db():
-    """Dependency for database session."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()

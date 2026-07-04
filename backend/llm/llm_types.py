@@ -22,6 +22,7 @@ class Provider(Enum):
     OLLAMA = "ollama"
     AZURE = "azure"
     CUSTOM = "custom"
+    MOCK = "mock"
 
 
 PROVIDER_CONFIGS = {
@@ -162,6 +163,15 @@ class LLMResponse:
     error: Optional[str] = None
     usage: Optional[dict] = None
     latency_ms: float = 0.0
+
+    @property
+    def content(self) -> str:
+        """Agent interface compatibility — maps to .text."""
+        return self.text or self.error or ""
+
+    @content.setter
+    def content(self, value: str) -> None:
+        self.text = value
 
 
 @dataclass

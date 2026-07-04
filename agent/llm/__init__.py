@@ -1,9 +1,5 @@
-"""
-LLM package - Gemini/OpenAI ke liye unified interface.
-Person 3 is package ke andar actual provider implementations add karega.
-Agent sirf is interface ke through LLM se baat karega - decoupling ke liye.
-"""
+"""LLM package — re-exports from backend.llm for backward compatibility."""
 
-from agent.llm.client import LLMClient, LLMResponse, LLMProvider
+from backend.llm.client import LLMClient, LLMResponse, LLMProvider, MockLLMClient
 
-__all__ = ["LLMClient", "LLMResponse", "LLMProvider"]
+__all__ = ["LLMClient", "LLMResponse", "LLMProvider", "MockLLMClient"]

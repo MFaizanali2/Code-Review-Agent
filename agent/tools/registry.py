@@ -80,6 +80,29 @@ class ToolRegistry:
         """Registry khali karo - testing ke liye useful."""
         self._tools.clear()
 
+    def validate_all(self) -> dict[str, str | None]:
+        """Validate every registered tool.
+
+        Returns: {tool_name: error_message_or_None}
+        """
+        from agent.tools.loader import validate_tool
+
+        results: dict[str, str | None] = {}
+        for name, tool in self._tools.items():
+            is_valid, error = validate_tool(tool)
+            results[name] = None if is_valid else error
+        return results
+
+    def get_safe(self, name: str) -> BaseTool | None:
+        """Get tool with additional runtime validation.
+
+        Same as get(), but logs a warning if tool is missing.
+        """
+        tool = self._tools.get(name)
+        if tool is None:
+            logger.warning("Tool '%s' not found in registry", name)
+        return tool
+
     def __contains__(self, name: str) -> bool:
         """'tool_name' in registry syntax support karo."""
         return name in self._tools

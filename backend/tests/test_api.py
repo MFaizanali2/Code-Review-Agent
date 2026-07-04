@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.database import Base, ReviewRecord, engine, SessionLocal
+from backend.database import Base, engine
 from backend.main import app
 
 

@@ -1,24 +1,31 @@
 from datetime import datetime
-from .base_tool import BaseTool
+from agent.tools.base import BaseTool, ToolResult, ToolSchema
+
 
 class ReportGeneratorTool(BaseTool):
-    def __init__(self):
-        super().__init__(
-            name="generate_report",
-            description="Sab analysis results ko combine karke final review report banao"
-        )
+    @property
+    def name(self) -> str:
+        return "generate_report"
 
-    async def execute(self, analysis_data: dict) -> dict:
+    @property
+    def description(self) -> str:
+        return "Combine all analysis results into a final review report"
+
+    async def run(self, tool_input: dict) -> ToolResult:
+        analysis_data = tool_input.get("analysis_data", tool_input)
+        if not isinstance(analysis_data, dict):
+            return ToolResult(success=False, data={}, error="analysis_data must be a dict")
+
         try:
-            github   = analysis_data.get("github", {})
-            code     = analysis_data.get("code", {}).get("data", {})
+            github = analysis_data.get("github", {})
+            code = analysis_data.get("code", {}).get("data", {})
             security = analysis_data.get("security", {})
-            perf     = analysis_data.get("performance", {})
+            perf = analysis_data.get("performance", {})
 
-            security_score   = max(0, 100 - (security.get("total_issues", 0) * 15))
+            security_score = max(0, 100 - (security.get("total_issues", 0) * 15))
             performance_score = perf.get("performance_score", 100)
-            quality_score    = self._calculate_quality_score(code)
-            overall_score    = round(
+            quality_score = self._calculate_quality_score(code)
+            overall_score = round(
                 (security_score * 0.4) + (performance_score * 0.3) + (quality_score * 0.3)
             )
 
@@ -27,7 +34,7 @@ class ReportGeneratorTool(BaseTool):
                     "generated_at": datetime.now().isoformat(),
                     "repo_files": github.get("file_count", 0),
                     "python_files": github.get("python_file_count", 0),
-                    "languages": github.get("languages", {})
+                    "languages": github.get("languages", {}),
                 },
                 "summary": {
                     "total_functions": len(code.get("functions", [])),
@@ -36,28 +43,26 @@ class ReportGeneratorTool(BaseTool):
                     "cyclomatic_complexity": code.get("complexity", 0),
                     "security_issues": security.get("total_issues", 0),
                     "performance_issues": perf.get("total_issues", 0),
-                    "risk_level": security.get("risk_level", "UNKNOWN")
+                    "risk_level": security.get("risk_level", "UNKNOWN"),
                 },
                 "scores": {
-                    "security":    security_score,
+                    "security": security_score,
                     "performance": performance_score,
-                    "quality":     quality_score,
-                    "overall":     overall_score
+                    "quality": quality_score,
+                    "overall": overall_score,
                 },
                 "issues": {
-                    "security":    security.get("vulnerabilities", []),
-                    "performance": perf.get("issues", [])
+                    "security": security.get("vulnerabilities", []),
+                    "performance": perf.get("issues", []),
                 },
-                "recommendations": self._build_recommendations(
-                    security, perf, code
-                ),
-                "final_verdict": self._get_verdict(overall_score)
+                "recommendations": self._build_recommendations(security, perf, code),
+                "final_verdict": self._get_verdict(overall_score),
             }
 
-            return {"status": "success", "report": report}
+            return ToolResult(success=True, data={"status": "success", "report": report})
 
         except Exception as e:
-            return {"status": "error", "message": str(e)}
+            return ToolResult(success=False, data={}, error=str(e))
 
     def _calculate_quality_score(self, code: dict) -> int:
         score = 100
@@ -76,32 +81,48 @@ class ReportGeneratorTool(BaseTool):
             recs.append({
                 "priority": "HIGH",
                 "message": f"Fix {security['total_issues']} security issue(s) immediately",
-                "category": "Security"
+                "category": "Security",
             })
         if perf.get("total_issues", 0) > 0:
             recs.append({
                 "priority": "MEDIUM",
                 "message": "Refactor nested loops and use list comprehensions",
-                "category": "Performance"
+                "category": "Performance",
             })
         if not code.get("has_docstrings", False):
             recs.append({
                 "priority": "LOW",
                 "message": "Add docstrings to functions and modules",
-                "category": "Documentation"
+                "category": "Documentation",
             })
         if code.get("complexity", 0) > 10:
             recs.append({
                 "priority": "MEDIUM",
                 "message": "Reduce cyclomatic complexity — break large functions into smaller ones",
-                "category": "Maintainability"
+                "category": "Maintainability",
             })
         return recs
 
     def _get_verdict(self, score: int) -> str:
         if score >= 80:
-            return "✅ GOOD — Code is production-ready with minor improvements"
+            return "GOOD — Code is production-ready with minor improvements"
         elif score >= 60:
-            return "⚠️ FAIR — Several issues need attention before deployment"
+            return "FAIR — Several issues need attention before deployment"
         else:
-            return "🔴 POOR — Critical issues must be fixed before deployment"
+            return "POOR — Critical issues must be fixed before deployment"
+
+    def schema(self) -> ToolSchema:
+        return ToolSchema(
+            name=self.name,
+            description=self.description,
+            parameters={
+                "analysis_data": {
+                    "type": "object",
+                    "description": (
+                        "Combined analysis results with keys: "
+                        "github, code, security, performance"
+                    ),
+                },
+            },
+            required=["analysis_data"],
+        )

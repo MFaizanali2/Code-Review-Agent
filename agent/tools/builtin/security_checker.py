@@ -1,8 +1,9 @@
 import ast
-import subprocess
 import json
 import re
-from .base_tool import BaseTool
+import subprocess
+from agent.tools.base import BaseTool, ToolResult, ToolSchema
+
 
 class SecurityCheckerTool(BaseTool):
 
@@ -19,17 +20,23 @@ class SecurityCheckerTool(BaseTool):
         {"pattern": r"__import__\s*\(", "issue": "Dynamic import — potential code injection", "severity": "MEDIUM"},
     ]
 
-    def __init__(self):
-        super().__init__(
-            name="check_security",
-            description="Python file mein security vulnerabilities scan karo"
-        )
+    @property
+    def name(self) -> str:
+        return "check_security"
 
-    async def execute(self, code_path: str) -> dict:
+    @property
+    def description(self) -> str:
+        return "Scan a Python file for security vulnerabilities"
+
+    async def run(self, tool_input: dict) -> ToolResult:
+        code_path = tool_input.get("code_path", "")
+        if not code_path:
+            return ToolResult(success=False, data={}, error="code_path is required")
+
         vulnerabilities = []
 
         try:
-            with open(code_path, 'r', encoding='utf-8', errors='ignore') as f:
+            with open(code_path, "r", encoding="utf-8", errors="ignore") as f:
                 lines = f.readlines()
 
             for line_num, line in enumerate(lines, 1):
@@ -39,16 +46,18 @@ class SecurityCheckerTool(BaseTool):
                             "line": line_num,
                             "issue": check["issue"],
                             "severity": check["severity"],
-                            "code": line.strip()
+                            "code": line.strip(),
                         })
         except Exception as e:
-            return {"status": "error", "message": f"File read error: {str(e)}"}
+            return ToolResult(success=False, data={}, error=f"File read error: {str(e)}")
 
         bandit_results = {}
         try:
             result = subprocess.run(
                 ["bandit", "-r", code_path, "-f", "json", "-q"],
-                capture_output=True, text=True, timeout=30
+                capture_output=True,
+                text=True,
+                timeout=30,
             )
             if result.stdout:
                 bandit_results = json.loads(result.stdout)
@@ -57,16 +66,35 @@ class SecurityCheckerTool(BaseTool):
 
         total = len(vulnerabilities)
         risk_level = (
-            "CRITICAL" if any(v["severity"] == "CRITICAL" for v in vulnerabilities)
-            else "HIGH" if any(v["severity"] == "HIGH" for v in vulnerabilities)
-            else "MEDIUM" if total > 0
+            "CRITICAL"
+            if any(v["severity"] == "CRITICAL" for v in vulnerabilities)
+            else "HIGH"
+            if any(v["severity"] == "HIGH" for v in vulnerabilities)
+            else "MEDIUM"
+            if total > 0
             else "SAFE"
         )
 
-        return {
-            "status": "success",
-            "vulnerabilities": vulnerabilities,
-            "bandit_results": bandit_results,
-            "total_issues": total,
-            "risk_level": risk_level
-        }
+        return ToolResult(
+            success=True,
+            data={
+                "status": "success",
+                "vulnerabilities": vulnerabilities,
+                "bandit_results": bandit_results,
+                "total_issues": total,
+                "risk_level": risk_level,
+            },
+        )
+
+    def schema(self) -> ToolSchema:
+        return ToolSchema(
+            name=self.name,
+            description=self.description,
+            parameters={
+                "code_path": {
+                    "type": "string",
+                    "description": "Path to the Python file to scan",
+                },
+            },
+            required=["code_path"],
+        )

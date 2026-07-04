@@ -15,3 +15,4 @@ st.title("Code Review Agent")
 st.write("AI-powered code review - Person 5 will build the full UI here.")
 
 st.info("Person 5: Use `st.chat_message` and `st.chat_input` for the chat interface.")
+

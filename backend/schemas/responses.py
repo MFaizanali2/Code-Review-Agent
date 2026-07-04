@@ -1,26 +1,24 @@
-"""Standardized API response schemas."""
+"""Standardized API response schemas (unused - reserved for future use)."""
 
 from __future__ import annotations
 
-from typing import Any, Dict, Generic, List, Optional, TypeVar
+from typing import Any
 
 from pydantic import BaseModel
-
-T = TypeVar("T")
 
 
 class ErrorResponse(BaseModel):
     detail: str
-    error_code: Optional[str] = None
+    error_code: str | None = None
 
 
 class SuccessResponse(BaseModel):
     message: str
-    data: Optional[Dict[str, Any]] = None
+    data: dict[str, Any] | None = None
 
 
 class PaginatedResponse(BaseModel):
-    items: List[Any]
+    items: list[Any]
     total: int
     page: int
     page_size: int
